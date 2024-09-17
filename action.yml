@@ -68,7 +68,7 @@ runs:
     shell: bash
     run: |
       spack -e myenv add \
-          ${{ steps.determine_name.outputs.package_name }}${{ inputs.package-version }}
+          "${{steps.determine_name.outputs.package_name}}${{inputs.package-version}}"
 
   - name: Install environment
     shell: bash
