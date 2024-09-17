@@ -1,0 +1,17 @@
+name: Test the action
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+    - main
+
+jobs:
+  build-margo:
+    runs-on: ubuntu-22.04
+    name: Build the latest version of margo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mochi-hpc/mochi-build-release-action@main
+        with:
+          package: mochi-margo
