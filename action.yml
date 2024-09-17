@@ -37,7 +37,7 @@ runs:
     shell: bash
     run: |
       REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
-      echo "::set-output name=repo_name::$REPO_NAME"
+      echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
 
   - name: Find the package name
     id: determine_name
@@ -48,7 +48,12 @@ runs:
       else
         PACKAGE_NAME="${{ inputs.package-name }}"
       fi
-      echo "::set-output name=package_name::$PACKAGE_NAME"
+      echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+
+  - name: Create environment
+    shell: bash
+    run: |
+      spack env create myenv "$GITHUB_ACTION_PATH"/spack.yaml
 
   - name: Add mochi-spack-packages
     shell: bash
@@ -57,25 +62,33 @@ runs:
       pushd mochi-spack-packages
       git checkout ${{ inputs.mochi-spack-packages-version }}
       popd
-      spack -e "$GITHUB_ACTION_PATH" repo add mochi-spack-packages
+      spack -e myenv repo add mochi-spack-packages
 
   - name: Add package to environment
     shell: bash
     run: |
-      spack -e "$GITHUB_ACTION_PATH" add \
+      spack -e myenv add \
           ${{ steps.determine_name.outputs.package_name }}${{ inputs.package-version }}
 
   - name: Install environment
     shell: bash
     run: |
-      spack -e "$GITHUB_ACTION_PATH" install
+      spack -e myenv install
 
   - name: Push packages to buildcache and update index
     if: ${{ inputs.build-cache-token != 'unspecified' }}
     shell: bash
     run: |
-      spack -e "$GITHUB_ACTION_PATH" mirror set --push \
+      spack -e myenv mirror set --push \
             --oci-username ${{ github.actor }} \
             --oci-password "${{ inputs.build-cache-token }}" mochi-buildcache
-      spack -e "$GITHUB_ACTION_PATH" buildcache push --base-image ubuntu:22.04 \
+      spack -e myenv buildcache push --base-image ubuntu:22.04 \
             --unsigned --only dependencies --update-index mochi-buildcache
+
+  - name: Cleanup mochi-spack-packages
+    shell: bash
+    run: |
+      spack env rm myenv
+      spack uninstall --all
+      spack clean --all
+      rm -rf mochi-spack-packages
