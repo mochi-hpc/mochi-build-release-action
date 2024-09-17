@@ -10,9 +10,14 @@ inputs:
     description: 'Version or commit hash of the mochi-spack-packages'
     required: false
     default: 'main'
-  package:
+  package-name:
     description: 'Package to build'
-    required: true
+    required: false
+    default: 'unspecified'
+  package-version:
+    description: 'Version of the package to build (should start with @)'
+    require: false
+    default: ''
   build-cache-token:
     description: 'Token to use to push into the build cache'
     required: false
@@ -26,6 +31,25 @@ runs:
     with:
       ref: ${{ inputs.spack-version }}
 
+  - name: Extract name of calling repository
+    id: extract_repo_name
+    if: ${{ inputs.package == 'unspecified' }}
+    shell: bash
+    run: |
+      REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
+      echo "::set-output name=repo_name::$REPO_NAME"
+
+  - name: Find the package name
+    id: determine_name
+    shell: bash
+    run: |
+      if [[ "${{ inputs.package-name }}" == "unspecified" ]]; then
+        PACKAGE_NAME="${{ steps.extract_repo_name.outputs.repo_name }}"
+      else
+        PACKAGE_NAME="${{ inputs.package-name }}"
+      fi
+      echo "::set-output name=package_name::$PACKAGE_NAME"
+
   - name: Add mochi-spack-packages
     shell: bash
     run: |
@@ -38,7 +62,8 @@ runs:
   - name: Add package to environment
     shell: bash
     run: |
-      spack -e "$GITHUB_ACTION_PATH" add ${{ inputs.package }}
+      spack -e "$GITHUB_ACTION_PATH" add \
+          ${{ steps.determine_name.outputs.package_name }}${{ inputs.package-version }}
 
   - name: Install environment
     shell: bash
@@ -53,4 +78,4 @@ runs:
             --oci-username ${{ github.actor }} \
             --oci-password "${{ inputs.build-cache-token }}" mochi-buildcache
       spack -e "$GITHUB_ACTION_PATH" buildcache push --base-image ubuntu:22.04 \
-            --unsigned --update-index mochi-buildcache
+            --unsigned --only dependencies --update-index mochi-buildcache
