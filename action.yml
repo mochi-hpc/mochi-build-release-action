@@ -27,6 +27,7 @@ runs:
       ref: ${{ inputs.spack-version }}
 
   - name: Add mochi-spack-packages
+    shell: bash
     run: |
       git clone https://github.com/mochi-hpc/mochi-spack-packages
       pushd mochi-spack-packages
@@ -35,15 +36,18 @@ runs:
       spack -e "$GITHUB_ACTION_PATH" repo add mochi-spack-packages
 
   - name: Add package to environment
+    shell: bash
     run: |
       spack -e "$GITHUB_ACTION_PATH" add ${{ inputs.package }}
 
   - name: Install environment
+    shell: bash
     run: |
       spack -e "$GITHUB_ACTION_PATH" install
 
   - name: Push packages to buildcache and update index
     if: ${{ inputs.push-to-build-cache }}
+    shell: bash
     run: |
       spack -e "$GITHUB_ACTION_PATH" mirror set --push \
             --oci-username ${{ github.actor }} \
