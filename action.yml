@@ -15,8 +15,12 @@ inputs:
     required: true
   push-to-build-cache:
     description: 'Whether to push specs to build cache after a successful build'
-    require: false
+    required: false
     default: false
+  build-cache-token:
+    description: 'Token to use to push into the build cache'
+    required: false
+    default: '<unspecified>'
 
 runs:
   using: "composite"
@@ -51,6 +55,6 @@ runs:
     run: |
       spack -e "$GITHUB_ACTION_PATH" mirror set --push \
             --oci-username ${{ github.actor }} \
-            --oci-password "${{ secrets.GITHUB_TOKEN }}" mochi-buildcache
+            --oci-password "${{ inputs.build-cache-token }}" mochi-buildcache
             spack -e tests buildcache push --base-image ubuntu:22.04 \
             --unsigned --update-index mochi-buildcache
