@@ -33,7 +33,7 @@ runs:
 
   - name: Extract name of calling repository
     id: extract_repo_name
-    if: ${{ inputs.package == 'unspecified' }}
+    if: ${{ inputs.package-name == 'unspecified' }}
     shell: bash
     run: |
       REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
