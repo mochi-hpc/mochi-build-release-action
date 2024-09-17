@@ -13,14 +13,10 @@ inputs:
   package:
     description: 'Package to build'
     required: true
-  push-to-build-cache:
-    description: 'Whether to push specs to build cache after a successful build'
-    required: false
-    default: 'false'
   build-cache-token:
     description: 'Token to use to push into the build cache'
     required: false
-    default: '<unspecified>'
+    default: 'unspecified'
 
 runs:
   using: "composite"
@@ -50,7 +46,7 @@ runs:
       spack -e "$GITHUB_ACTION_PATH" install
 
   - name: Push packages to buildcache and update index
-    if: ${{ inputs.push-to-build-cache == 'true' }}
+    if: ${{ inputs.build-cache-token != 'unspecified' }}
     shell: bash
     run: |
       spack -e "$GITHUB_ACTION_PATH" mirror set --push \

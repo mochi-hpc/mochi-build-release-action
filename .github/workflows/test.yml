@@ -15,3 +15,5 @@ jobs:
       - uses: mochi-hpc/mochi-build-release-action@main
         with:
           package: mochi-margo
+          build-cache-token: ${{ secrets.GITHUB_TOKEN }}
+
