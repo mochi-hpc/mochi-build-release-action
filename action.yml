@@ -1,0 +1,52 @@
+name: 'Build Mochi release with Spack'
+description: 'Build the release of a specified Mochi package using Spack'
+
+inputs:
+  spack-version:
+    description: 'Version of spack to use'
+    required: false
+    default: 'develop'
+  mochi-spack-packages-version:
+    description: 'Version or commit hash of the mochi-spack-packages'
+    required: false
+    default: 'main'
+  package:
+    description: 'Package to build'
+    required: true
+  push-to-build-cache:
+    description: 'Whether to push specs to build cache after a successful build'
+    require: false
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+  - name: Setup spack
+    uses: spack/setup-spack@v2.1.1
+    with:
+      ref: ${{ inputs.spack-version }}
+
+  - name: Add mochi-spack-packages
+    run: |
+      git clone https://github.com/mochi-hpc/mochi-spack-packages
+      pushd mochi-spack-packages
+      git checkout ${{ inputs.mochi-spack-packages-version }}
+      popd
+      spack -e "$GITHUB_ACTION_PATH" repo add mochi-spack-packages
+
+  - name: Add package to environment
+    run: |
+      spack -e "$GITHUB_ACTION_PATH" add ${{ inputs.package }}
+
+  - name: Install environment
+    run: |
+      spack -e "$GITHUB_ACTION_PATH" install
+
+  - name: Push packages to buildcache and update index
+    if: ${{ inputs.push-to-build-cache }}
+    run: |
+      spack -e "$GITHUB_ACTION_PATH" mirror set --push \
+            --oci-username ${{ github.actor }} \
+            --oci-password "${{ secrets.GITHUB_TOKEN }}" mochi-buildcache
+            spack -e tests buildcache push --base-image ubuntu:22.04 \
+            --unsigned --update-index mochi-buildcache
